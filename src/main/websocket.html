@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+ <html>
+
+<head>
+
+    <meta charset="utf-8"/>
+
+    <title>go测试socket</title>
+
+</head>
+
+<body>
+
+    <script type="text/javascript">
+
+        var sock = null;
+        var uuid = '';
+        var ticket = '';
+        var scan = '';
+
+        var wsuri = "ws://127.0.0.1:1234/websocket";
+
+        window.onload = function() {
+
+            console.log("onload");
+
+            sock = new WebSocket(wsuri);
+
+            sock.onopen = function() {
+
+                console.log("connected to " + wsuri);
+
+            }
+
+            sock.onclose = function(e) {
+
+                console.log("connection closed (" + e.code + ")");
+
+            }
+
+            sock.onmessage = function(e) {
+
+                if (e.data.isQrCode){
+                    document.getElementById('qrCode').src = e.data.QrPic;
+                }
+                else{
+                    document.getElementById('response').value = e.data;
+                    
+                }
+                console.log("message received: " + e.data);
+
+            }
+
+        };
+
+        function send() {
+
+            var msg = document.getElementById('message').value;
+
+            sock.send(msg);
+
+        };
+
+        function login(){
+            ajax('/QrCode',function(resp){
+                var data = JSON.parse(resp)
+                document.getElementById('qrCode').src="data:image/jpeg;base64,"+data.LoginPic;
+                uuid = data.Uuid;
+                //console.log("QrCode received: " + resp);
+                //tryLogin();
+            });
+
+        }
+
+
+        function tryLogin(){
+            window.setTimeout(function(){
+               dologin();
+            },1000);
+        }
+
+function dologin(){
+    ajax('/TryLogin?uuid='+uuid,function(resp){
+                    console.log("TryLogin received: " + resp);
+                    if (resp==='')
+                    {
+                        //tryLogin();
+                        console.log("TryLogin Failed! received: " + resp);
+                    }
+                    else
+                    {
+                        
+                        console.log("TryLogin Success! received: " + resp);
+                    }
+                })
+}
+
+function newpage(){
+    ajax('/NewPage?uuid='+uuid+'&ticket='+ticket+'&scan='+scan,function(resp){
+                    console.log("NewPage received: " + resp);
+                    if (resp==='')
+                    {
+                        //tryLogin();
+                        console.log("NewPage Failed! received: " + resp);
+                    }
+                    else
+                    {
+                        console.log("NewPage Success! received: " + resp);
+                    }
+                })
+}
+
+
+
+//?????????,???????????????????url.??????????????
+function ajax(url,fnSucc)
+{
+    if(window.XMLHttpRequest)
+        {
+            var oAjax = new XMLHttpRequest();
+        }
+        else
+        {
+            var oAjax = new ActiveXObject("Microsoft.XMLHTTP");//IE6?????ajax??
+        }
+        oAjax.open("GET",url,true);//????????????
+        oAjax.send();
+        oAjax.onreadystatechange=function()
+        {
+            if(oAjax.readyState==4)
+            {
+                if(oAjax.status==200)
+                {
+                    fnSucc(oAjax.responseText);//???????????
+                }
+                else
+                {
+                    if(fnfiled)
+                    {
+                        fnField(oAjax.status);
+                    }
+                }
+            }
+        };
+}
+
+
+    </script>
+ 
+    <h1>WebSocket Echo Test</h1>
+
+    <form>
+
+        <p>
+
+            Message: <input id="message" type="text" value="Hello, world!">
+            
+            Message: <input id="response" type="text" value="">
+
+        </p>
+
+        <img id="qrCode" src="">
+
+    </form>
+
+    <button onclick="send();">Send Message</button>
+    <button onclick="login();">Login</button>
+    <button onclick="dologin();">Try</button>
+    <button onclick="newpage();">newpage</button>
+
+</body>
+
+</html>
